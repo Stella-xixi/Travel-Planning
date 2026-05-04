@@ -68,6 +68,7 @@ class APIService {
     onReasoning: (content: string) => void;
     onReasoningStart: () => void;
     onReasoningEnd: () => void;
+    onReasoningTimestamp: (timestamp: string) => void;
     onAnswerStart: () => void;
     onMetadata: (data: { totalSteps: number; toolsUsed: string[]; hasReasoning: boolean; reasoningLength: number; answerLength: number }) => void;
     onError: (error: string) => void;
@@ -126,7 +127,7 @@ class APIService {
               const data = JSON.parse(dataStr);
               const dataType = data.type;
 
-              if (dataType === 'metadata') {
+              if (dataType === 'metadata' || dataType === 'reasoning_metadata') {
                 callbacks.onMetadata({
                   totalSteps: data.total_steps || 0,
                   toolsUsed: data.tools_used || [],
@@ -134,8 +135,14 @@ class APIService {
                   reasoningLength: data.reasoning_length || 0,
                   answerLength: data.answer_length || 0
                 });
+                // reasoning_metadata 事件也触发思考开始
+                if (dataType === 'reasoning_metadata' && data.has_reasoning) {
+                  callbacks.onReasoningStart();
+                }
               } else if (dataType === 'reasoning_start') {
                 callbacks.onReasoningStart();
+              } else if (dataType === 'reasoning_timestamp' && data.timestamp) {
+                callbacks.onReasoningTimestamp(data.timestamp);
               } else if (dataType === 'reasoning_chunk' && data.content) {
                 callbacks.onReasoning(data.content + '\n');
               } else if (dataType === 'reasoning_end') {

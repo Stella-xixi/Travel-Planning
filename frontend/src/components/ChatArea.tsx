@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button, Space, Card } from 'antd';
-import { SendOutlined, StopOutlined } from '@ant-design/icons';
+import { SendOutlined, StopOutlined, RobotOutlined } from '@ant-design/icons';
 import { useAppContext } from '@/context/AppContext';
 import { apiService } from '@/services/api';
 import MessageList from './MessageList';
@@ -146,6 +146,7 @@ const ChatArea: React.FC = () => {
 
     let fullResponse = '';
     let fullReasoning = '';
+    let reasoningTimestamp = '';
 
     await apiService.fetchStreamChat(
       {
@@ -167,6 +168,9 @@ const ChatArea: React.FC = () => {
             setThinkingStartTime(Date.now());
           }
         },
+        onReasoningTimestamp: (timestamp) => {
+          reasoningTimestamp = timestamp;
+        },
         onReasoningEnd: () => {
           setIsThinking(false);
         },
@@ -179,7 +183,7 @@ const ChatArea: React.FC = () => {
           fullResponse = `抱歉，出现错误：${errorMsg}`;
         },
         onComplete: () => {
-          const finalReasoning = fullReasoning;
+          const finalReasoning = reasoningTimestamp ? `[Timestamp: ${reasoningTimestamp}]\n\n${fullReasoning}` : fullReasoning;
           const finalContent = fullResponse || streamingMessage;
 
           const finalMessage = {
@@ -223,8 +227,8 @@ const ChatArea: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '24px' }}>
-      <div style={{ marginBottom: '16px' }}>
+    <div className="chat-input-area" style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '24px' }}>
+      <div className="chat-header" style={{ marginBottom: '16px' }}>
         <h2 style={{ margin: 0 }}>小帅旅游助手</h2>
         <p style={{ margin: '4px 0 0 0', color: '#666' }}>为您提供个性化的旅游推荐和路线规划</p>
       </div>
@@ -232,6 +236,7 @@ const ChatArea: React.FC = () => {
       <div style={{ flex: 1, overflow: 'auto', marginBottom: '16px' }}>
         <MessageList
           messages={messages}
+          streamingReasoning={streamingReasoning}
           reasoningExpanded={reasoningExpanded}
           onToggleReasoning={toggleReasoning}
         />
@@ -239,41 +244,83 @@ const ChatArea: React.FC = () => {
         {isThinking && (
           <div style={{
             display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '8px'
+            justifyContent: 'flex-start',
+            marginBottom: '16px',
+            alignItems: 'flex-start',
+            gap: '12px',
+            maxWidth: '100%',
+            padding: '0 16px',
           }}>
-            <Card
+            {/* AI头像 */}
+            <div
               style={{
-                width: '100%',
-                background: '#fafafa',
-                borderRadius: '8px',
-                border: '1px dashed #d9d9d9',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               }}
-              bodyStyle={{ padding: '12px 16px' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#999' }}>
-                <span style={{
-                  display: 'inline-block',
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  border: '2px solid #722ed1',
-                  borderTopColor: 'transparent',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                <span style={{ fontSize: '13px' }}>深度思考中{loadingDots}</span>
-                <span style={{ fontSize: '13px', marginLeft: '4px' }}>({thinkingElapsed}s)</span>
-              </div>
-            </Card>
-          </div>
-        )}
+              <RobotOutlined style={{ color: 'white', fontSize: '18px' }} />
+            </div>
 
-        {streamingMessage && (
-          <MessageList
-            messages={[]}
-            streamingMessage={streamingMessage}
-            isThinking={false}
-          />
+            <div style={{ flex: 1, maxWidth: 'calc(100% - 52px)' }}>
+              {/* 用户名 */}
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: '#262730' }}>
+                  小帅助手
+                </span>
+                <span style={{ fontSize: '11px', opacity: 0.6, color: '#999' }}>
+                  Reasoning{loadingDots}
+                </span>
+              </div>
+
+              {/* 思考中动画卡片 */}
+              <Card
+                style={{
+                  background: '#fff',
+                  borderRadius: '12px',
+                  border: '1px solid #e8e8e8',
+                }}
+                bodyStyle={{ padding: '14px 16px' }}
+              >
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  padding: '8px 0'
+                }}>
+                  {/* 脉冲动画圆点 */}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        style={{
+                          display: 'inline-block',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: '#722ed1',
+                          animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '13px', color: '#722ed1', fontWeight: 500 }}>
+                    Deep Reasoning
+                  </span>
+                  <span style={{ fontSize: '13px', color: '#999' }}>
+                    ({thinkingElapsed}s)
+                  </span>
+                </div>
+              </Card>
+            </div>
+          </div>
         )}
 
         {error && (
@@ -287,8 +334,65 @@ const ChatArea: React.FC = () => {
 
       <div>
         {!currentSessionId && messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '16px', background: '#e6f7ff', borderRadius: '8px', marginBottom: '16px' }}>
-            💬 发送消息开始对话
+          <div style={{
+            marginBottom: '16px',
+            maxWidth: '100%'
+          }}>
+            {/* 欢迎提示 */}
+            <div style={{
+              textAlign: 'center',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%)',
+              borderRadius: '12px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontSize: '16px', fontWeight: 600, color: '#262730', marginBottom: '8px' }}>
+                欢迎使用小帅旅游助手
+              </div>
+              <div style={{ fontSize: '13px', color: '#666' }}>
+                我可以帮您规划旅游路线、推荐景点、提供旅行建议等
+              </div>
+            </div>
+
+            {/* 示例问题 */}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', color: '#999', marginBottom: '8px', textAlign: 'center' }}>
+                试试这样问我：
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
+                {[
+                  '推荐一个周末短途旅行目的地',
+                  '北京三日游怎么安排？',
+                  '去云南旅游需要注意什么？',
+                  '给我一个三亚自由行攻略'
+                ].map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputValue(question)}
+                    style={{
+                      padding: '8px 14px',
+                      background: '#fff',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      color: '#262730',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#667eea';
+                      e.currentTarget.style.background = '#f0f5ff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e8e8e8';
+                      e.currentTarget.style.background = '#fff';
+                    }}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

@@ -1,15 +1,24 @@
 'use client';
 
-import React from 'react';
-import { Card } from 'antd';
+import React, { useState } from 'react';
+import { Card, message } from 'antd';
 import { Message } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
-import { BulbOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
+import {
+  BulbOutlined,
+  DownOutlined,
+  UpOutlined,
+  CopyOutlined,
+  CheckOutlined,
+  UserOutlined,
+  RobotOutlined
+} from '@ant-design/icons';
 
 interface Props {
   messages: Message[];
   streamingMessage?: string;
+  streamingReasoning?: string;
   isThinking?: boolean;
   reasoningExpanded?: Record<string, boolean>;
   onToggleReasoning?: (messageId: string) => void;
@@ -41,6 +50,53 @@ interface ReasoningBlockProps {
   isStreaming?: boolean;
 }
 
+// 复制按钮组件
+interface CopyButtonProps {
+  content: string;
+}
+
+const CopyButton: React.FC<CopyButtonProps> = ({ content }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      message.success('已复制到剪贴板');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      message.error('复制失败，请手动选择复制');
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={copied ? '已复制' : '复制'}
+      style={{
+        background: 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        padding: '4px 8px',
+        borderRadius: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: copied ? '#52c41a' : 'inherit',
+        transition: 'all 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      {copied ? <CheckOutlined style={{ fontSize: '14px' }} /> : <CopyOutlined style={{ fontSize: '14px' }} />}
+    </button>
+  );
+};
+
 const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   reasoning,
   messageId,
@@ -49,6 +105,13 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   isStreaming = false
 }) => {
   if (!reasoning) return null;
+
+  // 提取时间戳
+  const timestampMatch = reasoning.match(/\[Timestamp: ([^\]]+)\]/);
+  const timestamp = timestampMatch ? timestampMatch[1] : null;
+
+  // 去除时间戳行，只显示内容
+  const cleanReasoning = reasoning.replace(/\[Timestamp: [^\]]+\]\n?\n?/g, '').trim();
 
   return (
     <div
@@ -80,8 +143,13 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
           }}
         />
         <span style={{ fontSize: '13px', color: '#666', flex: 1 }}>
-          {isStreaming ? '思考中...' : '深度思考'}
+          {isStreaming ? 'Thinking...' : 'Reasoning Process'}
         </span>
+        {timestamp && !isStreaming && (
+          <span style={{ fontSize: '11px', color: '#999', marginRight: '8px' }}>
+            {timestamp}
+          </span>
+        )}
         {isExpanded ? (
           <UpOutlined style={{ color: '#999', fontSize: '12px' }} />
         ) : (
@@ -99,11 +167,12 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
             lineHeight: '1.7',
             whiteSpace: 'pre-wrap',
             maxHeight: '300px',
-            overflow: 'auto'
+            overflow: 'auto',
+            color: '#666'
           }}
         >
           <ReactMarkdown components={markdownComponents}>
-            {cleanContent(reasoning)}
+            {cleanContent(cleanReasoning)}
           </ReactMarkdown>
         </div>
       )}
@@ -120,59 +189,112 @@ const MessageItem: React.FC<{
   const messageId = `msg_${msg.timestamp}_${msg.content.slice(0, 10)}`;
   const isExpanded = reasoningExpanded[messageId] ?? false;
 
+  // 用户头像颜色
+  const userAvatarColors = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  const aiAvatarColors = 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)';
+
   return (
     <div
       style={{
         display: 'flex',
-        justifyContent: 'center',
-        marginBottom: '8px'
+        flexDirection: isUser ? 'row-reverse' : 'flex-start',
+        justifyContent: 'flex-start',
+        marginBottom: '16px',
+        alignItems: 'flex-start',
+        gap: '12px',
+        maxWidth: '100%',
+        padding: '0 16px',
       }}
     >
-      <Card
+      {/* 头像 */}
+      <div
+        className="chat-avatar"
         style={{
-          width: '100%',
-          background: isUser
-            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-            : '#fff',
-          color: isUser ? 'white' : '#262730',
-          borderRadius: '12px',
-          border: isUser ? 'none' : '1px solid #e8e8e8',
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          background: isUser ? userAvatarColors : aiAvatarColors,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
-        bodyStyle={{ padding: '16px' }}
       >
-        <div style={{
-          fontSize: '13px',
-          marginBottom: '8px',
-          opacity: 0.8,
-          fontWeight: 500
-        }}>
-          {isUser ? '你' : '小帅助手'}
-        </div>
-
-        {!isUser && msg.reasoning && (
-          <ReasoningBlock
-            reasoning={msg.reasoning}
-            messageId={messageId}
-            isExpanded={isExpanded}
-            onToggle={onToggleReasoning}
-          />
+        {isUser ? (
+          <UserOutlined style={{ color: 'white', fontSize: '18px' }} />
+        ) : (
+          <RobotOutlined style={{ color: 'white', fontSize: '18px' }} />
         )}
+      </div>
 
-        <div style={{ lineHeight: 1.7 }}>
-          <ReactMarkdown components={markdownComponents}>
-            {cleanContent(msg.content)}
-          </ReactMarkdown>
+      <div style={{ flex: 1, maxWidth: 'calc(100% - 52px)' }}>
+        {/* 用户名和时间 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '6px',
+            gap: '8px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: isUser ? 'white' : '#262730',
+            }}
+          >
+            {isUser ? '你' : '小帅助手'}
+          </span>
+          <span
+            style={{
+              fontSize: '11px',
+              opacity: 0.6,
+              color: isUser ? 'rgba(255,255,255,0.7)' : '#999',
+            }}
+          >
+            {msg.timestamp}
+          </span>
         </div>
 
-        <div style={{
-          fontSize: '11px',
-          marginTop: '8px',
-          opacity: 0.6,
-          textAlign: 'right'
-        }}>
-          {msg.timestamp}
+        {/* 消息气泡卡片 */}
+        <Card
+          className="chat-message-card"
+          style={{
+            background: isUser
+              ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              : '#fff',
+            color: isUser ? 'white' : '#262730',
+            borderRadius: '12px',
+            border: isUser ? 'none' : '1px solid #e8e8e8',
+            boxShadow: isUser ? '0 2px 8px rgba(102, 126, 234, 0.3)' : 'none',
+          }}
+          bodyStyle={{ padding: '14px 16px' }}
+        >
+          {/* 思考过程（仅AI消息） */}
+          {!isUser && msg.reasoning && (
+            <ReasoningBlock
+              reasoning={msg.reasoning}
+              messageId={messageId}
+              isExpanded={isExpanded}
+              onToggle={onToggleReasoning}
+            />
+          )}
+
+          {/* 消息内容 */}
+          <div style={{ lineHeight: 1.7, fontSize: '14px' }}>
+            <ReactMarkdown components={markdownComponents}>
+              {cleanContent(msg.content)}
+            </ReactMarkdown>
+          </div>
+        </Card>
+
+        {/* 复制按钮（仅在消息内容非空时显示） */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+          <CopyButton content={msg.content} />
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
@@ -180,11 +302,123 @@ const MessageItem: React.FC<{
 const MessageList: React.FC<Props> = ({
   messages,
   streamingMessage,
+  streamingReasoning,
   reasoningExpanded = {},
   onToggleReasoning
 }) => {
+  // 流式消息组件
+  const StreamingMessageItem: React.FC<{ content: string; reasoning?: string }> = ({ content, reasoning }) => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'flex-start',
+          justifyContent: 'flex-start',
+          marginBottom: '16px',
+          alignItems: 'flex-start',
+          gap: '12px',
+          maxWidth: '100%',
+          padding: '0 16px',
+        }}
+      >
+        {/* AI头像 */}
+        <div
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <RobotOutlined style={{ color: 'white', fontSize: '18px' }} />
+        </div>
+
+        <div style={{ flex: 1, maxWidth: 'calc(100% - 52px)' }}>
+          {/* 用户名 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '6px', gap: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: '#262730' }}>
+              小帅助手
+            </span>
+            <span style={{ fontSize: '11px', opacity: 0.6, color: '#999' }}>
+              生成中...
+            </span>
+          </div>
+
+          {/* 消息气泡 */}
+          <Card
+            className="chat-message-card"
+            style={{
+              background: '#fff',
+              borderRadius: '12px',
+              border: '1px solid #e8e8e8',
+            }}
+            bodyStyle={{ padding: '14px 16px' }}
+          >
+            {/* 流式思考过程 */}
+            {reasoning && (
+              <div
+                style={{
+                  marginBottom: '8px',
+                  background: '#fafafa',
+                  borderRadius: '8px',
+                  border: '1px solid #e8e8e8',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    background: '#f5f5f5',
+                    userSelect: 'none'
+                  }}
+                >
+                  <BulbOutlined style={{ color: '#722ed1', marginRight: '8px', fontSize: '14px' }} />
+                  <span style={{ fontSize: '13px', color: '#666', flex: 1 }}>
+                    Thinking...
+                  </span>
+                  {/* 动态加载点 */}
+                  <span className="thinking-dots" style={{ color: '#999' }}>...</span>
+                </div>
+                <div
+                  style={{
+                    padding: '12px',
+                    background: '#fff',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                    lineHeight: '1.7',
+                    whiteSpace: 'pre-wrap',
+                    maxHeight: '300px',
+                    overflow: 'auto',
+                    color: '#666'
+                  }}
+                >
+                  <ReactMarkdown components={markdownComponents}>
+                    {cleanContent(reasoning)}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
+
+            <div style={{ lineHeight: 1.7, fontSize: '14px' }}>
+              <ReactMarkdown components={markdownComponents}>
+                {cleanContent(content)}
+              </ReactMarkdown>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+    <div className="chat-message-container" style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
       {messages.map((msg, index) => (
         <MessageItem
           key={index}
@@ -195,32 +429,7 @@ const MessageList: React.FC<Props> = ({
       ))}
 
       {streamingMessage && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '8px'
-          }}
-        >
-          <Card
-            style={{
-              width: '100%',
-              background: '#fff',
-              borderRadius: '12px',
-              border: '1px solid #e8e8e8',
-            }}
-            bodyStyle={{ padding: '16px' }}
-          >
-            <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px', fontWeight: 500 }}>
-              小帅助手
-            </div>
-            <div style={{ lineHeight: 1.7 }}>
-              <ReactMarkdown components={markdownComponents}>
-                {cleanContent(streamingMessage)}
-              </ReactMarkdown>
-            </div>
-          </Card>
-        </div>
+        <StreamingMessageItem content={streamingMessage} reasoning={streamingReasoning} />
       )}
     </div>
   );

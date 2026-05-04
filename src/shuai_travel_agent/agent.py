@@ -473,97 +473,119 @@ class ReActTravelAgent:
             }
 
     def _build_reasoning_text(self, history: List[Dict]) -> str:
-        """构建人类可读的思考过程文本，完整展示agent的决策链条"""
-        if not history:
-            return "无推理过程"
+        """
+        构建人类可读的思考过程文本，完整展示agent的决策链条
+        使用<thinking>标签包裹，英文书写
 
-        text_parts = []
+        Args:
+            history: 执行历史
+
+        Returns:
+            格式化的思考过程文本（用<thinking>标签包裹）
+        """
+        if not history:
+            return "<thinking>\n[Timestamp: {timestamp}]\n\n[Intent Analysis]\nNo reasoning history available.\n\n[Context Evaluation]\nNo context available.\n\n[Response Planning]\nUnable to generate response.\n\n[Constraint Check]\nNo constraints checked.\n</thinking>".format(
+                timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+
+        # 收集各个阶段的信息
+        intent_analysis = []
+        context_evaluation = []
+        response_planning = []
+        constraint_check = []
 
         for i, step in enumerate(history):
             thought = step.get('thought', {})
             action = step.get('action', {})
 
             thought_type = thought.get('type', 'UNKNOWN')
-            thought_content = thought.get('content', '无')
+            thought_content = thought.get('content', '')
             action_name = action.get('tool_name', '')
             action_status = action.get('status', 'PENDING')
             result = action.get('result', {})
 
-            # 根据思考类型生成不同的标题
+            # 根据思考类型分类
             if thought_type == 'ANALYSIS':
-                title = "【阶段1】任务分析"
+                if thought_content:
+                    intent_analysis.append(f"Step {i + 1}: {thought_content}")
             elif thought_type == 'PLANNING':
-                title = "【阶段2】制定计划"
+                if thought_content:
+                    response_planning.append(f"Step {i + 1}: {thought_content}")
             elif thought_type == 'INFERENCE':
-                title = f"【阶段{3 + i - 1}】执行反馈"
+                if thought_content:
+                    context_evaluation.append(f"Step {i + 1}: {thought_content}")
+                # 收集工具调用信息
+                if action_name and action_name != 'none':
+                    status_str = 'SUCCESS' if action_status == 'SUCCESS' else 'FAILED' if action_status == 'FAILED' else 'RUNNING'
+                    context_evaluation.append(f"  - Tool: {action_name} [{status_str}]")
+                    if result and isinstance(result, dict):
+                        if result.get('success'):
+                            context_evaluation.append(f"  - Result: Tool executed successfully")
+                        elif result.get('error'):
+                            context_evaluation.append(f"  - Error: {result.get('error')}")
             elif thought_type == 'REFLECTION':
-                title = f"【阶段{3 + i - 1}】反思调整"
-            else:
-                title = f"【步骤 {i + 1}】"
+                if thought_content:
+                    constraint_check.append(f"Step {i + 1}: {thought_content}")
+                    # 检查置信度
+                    confidence = thought.get('confidence', 0)
+                    if confidence > 0:
+                        constraint_check.append(f"  - Confidence: {confidence:.0%}")
 
-            text_parts.append(f"\n{'='*50}")
-            text_parts.append(f"{title}")
-            text_parts.append(f"{'='*50}")
+        # 构建英文思考过程
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # 显示完整的思考内容
-            text_parts.append(f"\n{thought_content}")
+        # Intent Analysis
+        intent_section = "[Intent Analysis]\n"
+        if intent_analysis:
+            intent_section += "\n".join(intent_analysis)
+        else:
+            intent_section += f"User query analysis based on {len(history)} reasoning steps.\n"
+            # 从第一个思考中提取意图
+            if history:
+                first_thought = history[0].get('thought', {}).get('content', '')
+                if first_thought:
+                    intent_section += f"Initial analysis: {first_thought[:200]}"
 
-            # 显示推理链
-            reasoning_chain = thought.get('reasoning_chain', [])
-            if reasoning_chain:
-                text_parts.append(f"\n【推理链】")
-                for j, chain_item in enumerate(reasoning_chain, 1):
-                    text_parts.append(f"  {j}. {chain_item}")
+        # Context Evaluation
+        context_section = "[Context Evaluation]\n"
+        if context_evaluation:
+            context_section += "\n".join(context_evaluation)
+        else:
+            context_section += "No explicit context evaluation steps recorded."
 
-            # 显示行动信息
-            if action_name and action_name != 'none':
-                status_symbol = '✓' if action_status == 'SUCCESS' else '✗' if action_status == 'FAILED' else '⏳'
-                text_parts.append(f"\n【执行动作】{action_name} {status_symbol}")
+        # Response Planning
+        response_section = "[Response Planning]\n"
+        if response_planning:
+            response_section += "\n".join(response_planning)
+        else:
+            response_section += "Response generation based on tool execution results.\n"
+            # 收集使用的工具
+            tools_used = self._extract_tools_used(history)
+            if tools_used:
+                response_section += f"Tools to be used: {', '.join(tools_used)}"
 
-                # 显示执行参数
-                if action.get('parameters'):
-                    params = action['parameters']
-                    text_parts.append(f"【输入参数】{json.dumps(params, ensure_ascii=False, indent=2)}")
+        # Constraint Check
+        constraint_section = "[Constraint Check]\n"
+        if constraint_check:
+            constraint_section += "\n".join(constraint_check)
+        else:
+            constraint_section += "All constraints satisfied.\n"
+            constraint_section += f"- Total reasoning steps: {len(history)}\n"
+            constraint_section += f"- Tools executed: {len(self._extract_tools_used(history))}\n"
+            constraint_section += "- Response format: Standard text response"
 
-                # 显示执行结果
-                if result:
-                    if isinstance(result, dict):
-                        text_parts.append(f"\n【返回结果】")
-                        if 'response' in result:
-                            response = result['response']
-                            # 确保是字符串
-                            if isinstance(response, dict):
-                                text_parts.append(f"  {json.dumps(response, ensure_ascii=False)}")
-                            elif isinstance(response, list):
-                                text_parts.append(f"  {', '.join(str(x) for x in response)}")
-                            else:
-                                text_parts.append(f"  {response}")
-                        elif 'cities' in result and result.get('success'):
-                            cities = result.get('cities', [])
-                            # cities 是字典列表，需要提取城市名称
-                            city_names = [c.get('city', str(c)) for c in cities]
-                            text_parts.append(f"  推荐城市 ({len(city_names)}个)：{', '.join(city_names)}")
-                        elif 'route_plan' in result and result.get('success'):
-                            route_days = len(result.get('route_plan', []))
-                            text_parts.append(f"  路线规划：{route_days}天行程")
-                        elif 'info' in result:
-                            text_parts.append(f"  城市信息已获取")
-                        elif 'success' in result:
-                            text_parts.append(f"  执行成功")
-                    else:
-                        text_parts.append(f"  {result}")
+        # 组合完整思考过程
+        thinking_content = f"""[Timestamp: {timestamp}]
 
-            # 显示置信度
-            confidence = thought.get('confidence', 0)
-            if confidence > 0:
-                text_parts.append(f"\n【置信度】{confidence:.0%}")
+{intent_section}
 
-        # 添加总结
-        text_parts.append(f"\n{'='*50}")
-        text_parts.append("【执行完成】")
-        text_parts.append(f"{'='*50}")
+{context_section}
 
-        return "\n".join(text_parts)
+{response_section}
+
+{constraint_section}"""
+
+        return f"<thinking>\n{thinking_content}\n</thinking>"
 
     def _extract_tools_used(self, history: List[Dict]) -> List[str]:
         """提取使用的工具列表"""

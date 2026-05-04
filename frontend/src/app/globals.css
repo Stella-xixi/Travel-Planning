@@ -38,6 +38,64 @@ body {
   }
 }
 
+/* 脉冲动画 - 思考模式 */
+@keyframes pulse {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* 思考过程加载动画 */
+@keyframes thinkingPulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.thinking-dots {
+  animation: thinkingPulse 1.5s ease-in-out infinite;
+}
+
+/* 思考过程区块样式 */
+.reasoning-block {
+  background: #fafafa !important;
+  border: 1px solid #e8e8e8 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.reasoning-block-header {
+  background: #f5f5f5 !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+.reasoning-block-content {
+  padding: 12px !important;
+  background: #fff !important;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace !important;
+  font-size: 12px !important;
+  line-height: 1.7 !important;
+  white-space: pre-wrap !important;
+  max-height: 300px !important;
+  overflow: auto !important;
+  color: #666 !important;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .ant-layout-sider {
@@ -48,5 +106,45 @@ body {
 
   .ant-layout {
     margin-left: 0 !important;
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 576px) {
+  /* 消息容器 */
+  .chat-message-container {
+    padding: 0 8px !important;
+  }
+
+  /* 头像缩小 */
+  .chat-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .chat-avatar .anticon {
+    font-size: 14px !important;
+  }
+
+  /* 消息气泡 */
+  .chat-message-card {
+    padding: 12px !important;
+  }
+
+  /* 头部区域 */
+  .chat-header {
+    padding: 16px !important;
+  }
+
+  /* 输入区域 */
+  .chat-input-area {
+    padding: 12px !important;
+  }
+}
+
+/* 平板适配 */
+@media (min-width: 577px) and (max-width: 992px) {
+  .chat-message-container {
+    max-width: 95% !important;
   }
 }

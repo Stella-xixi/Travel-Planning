@@ -13,7 +13,8 @@
       "Bash(\"D:\\\\codes\\\\anaconda3\\\\envs\\\\agents\\\\python.exe\" -c:*)",
       "Bash(D:\\\\codes\\\\anaconda3\\\\envs\\\\agents\\\\python.exe -c:*)",
       "Bash(npm install @ant-design/cssinjs)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(ls:*)"
     ]
   }
 }

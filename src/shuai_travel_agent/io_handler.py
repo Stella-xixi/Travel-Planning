@@ -429,6 +429,247 @@ class ResponseBuilder:
     _logger = LoggerManager.get_logger("io_handler.response_builder")
 
     @staticmethod
+    def format_timestamp(dt: datetime = None) -> str:
+        """
+        格式化时间戳为指定格式
+
+        Args:
+            dt: datetime对象，为None时使用当前时间
+
+        Returns:
+            格式化的时间戳字符串 (YYYY-MM-DD HH:MM:SS)
+        """
+        if dt is None:
+            dt = datetime.now()
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def parse_thinking_content(text: str) -> Dict[str, Any]:
+        """
+        解析<thinking>标签包裹的思考内容
+
+        Args:
+            text: 包含<thinking>标签的原始文本
+
+        Returns:
+            解析结果字典，包含：
+            - thinking: 思考内容（无标签）
+            - content: 正文内容（去除thinking标签）
+            - has_thinking: 是否包含思考内容
+            - thinking_timestamp: 思考时间戳
+        """
+        trace_id = trace_context.get_trace_id()
+
+        # 匹配<thinking>...</thinking>标签
+        thinking_pattern = r'<thinking>(.*?)</thinking>'
+        matches = re.findall(thinking_pattern, text, re.DOTALL)
+
+        result = {
+            "thinking": "",
+            "content": text,
+            "has_thinking": False,
+            "thinking_timestamp": ResponseBuilder.format_timestamp()
+        }
+
+        if matches:
+            result["has_thinking"] = True
+            result["thinking"] = "\n".join(matches).strip()
+            # 从原文中移除thinking标签，保留正文
+            result["content"] = re.sub(thinking_pattern, "", text, flags=re.DOTALL).strip()
+
+        ResponseBuilder._logger.debug(
+            f"[{trace_id}] 思考内容解析完成",
+            has_thinking=result["has_thinking"],
+            thinking_length=len(result["thinking"]),
+            content_length=len(result["content"])
+        )
+
+        return result
+
+    @staticmethod
+    def format_thinking_process(
+        intent_analysis: str,
+        context_evaluation: str,
+        response_planning: str,
+        constraint_check: str,
+        include_timestamp: bool = True
+    ) -> str:
+        """
+        格式化思考过程（按要求的四个阶段）
+
+        思考过程包含：
+        1. Intent Analysis - 意图分析
+        2. Context Evaluation - 上下文评估
+        3. Response Planning - 响应规划
+        4. Constraint Check - 约束检查
+
+        Args:
+            intent_analysis: 意图分析内容（英文）
+            context_evaluation: 上下文评估内容（英文）
+            response_planning: 响应规划内容（英文）
+            constraint_check: 约束检查内容（英文）
+            include_timestamp: 是否包含时间戳
+
+        Returns:
+            格式化的思考过程文本（用<thinking>标签包裹）
+        """
+        trace_id = trace_context.get_trace_id()
+
+        timestamp = ResponseBuilder.format_timestamp() if include_timestamp else ""
+
+        thinking_content = f"""[Intent Analysis]
+{intent_analysis}
+
+[Context Evaluation]
+{context_evaluation}
+
+[Response Planning]
+{response_planning}
+
+[Constraint Check]
+{constraint_check}"""
+
+        if timestamp:
+            thinking_content = f"[Timestamp: {timestamp}]\n\n{thinking_content}"
+
+        result = f"<thinking>\n{thinking_content}\n</thinking>"
+
+        ResponseBuilder._logger.debug(
+            f"[{trace_id}] 思考过程格式化完成",
+            content_length=len(result)
+        )
+
+        return result
+
+    @staticmethod
+    def build_thinking_response(
+        thinking: str,
+        content: str,
+        metadata: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        构建包含思考过程的响应
+
+        Args:
+            thinking: 思考过程内容
+            content: 正式回复内容
+            metadata: 附加元数据
+
+        Returns:
+            响应字典
+        """
+        trace_id = trace_context.get_trace_id()
+
+        response = {
+            "success": True,
+            "thinking": thinking,
+            "content": content,
+            "thinking_timestamp": ResponseBuilder.format_timestamp(),
+            "timestamp": datetime.now().isoformat()
+        }
+
+        if metadata:
+            response["metadata"] = metadata
+
+        ResponseBuilder._logger.debug(
+            f"[{trace_id}] 思考响应构建完成",
+            has_thinking=bool(thinking),
+            thinking_length=len(thinking) if thinking else 0,
+            content_length=len(content)
+        )
+
+        return response
+
+    @staticmethod
+    def format_for_thinking_stream(
+        thinking: str,
+        content: str,
+        chunk_size: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        格式化为思考过程流式输出
+
+        Args:
+            thinking: 思考过程文本
+            content: 正式回复文本
+            chunk_size: 内容分块大小
+
+        Returns:
+            流式事件列表
+        """
+        events = []
+
+        # 思考开始事件
+        events.append({"type": "thinking_start", "timestamp": ResponseBuilder.format_timestamp()})
+
+        # 思考内容分块
+        thinking_chunks = ResponseBuilder._split_text(thinking, chunk_size)
+        for i, chunk in enumerate(thinking_chunks):
+            events.append({
+                "type": "thinking_chunk",
+                "content": chunk,
+                "chunk_index": i,
+                "total_chunks": len(thinking_chunks)
+            })
+
+        # 思考结束事件
+        events.append({"type": "thinking_end", "timestamp": ResponseBuilder.format_timestamp()})
+
+        # 回答开始事件
+        events.append({"type": "answer_start", "timestamp": ResponseBuilder.format_timestamp()})
+
+        # 回答内容分块
+        answer_chunks = ResponseBuilder._split_text(content, chunk_size)
+        for i, chunk in enumerate(answer_chunks):
+            events.append({
+                "type": "answer_chunk",
+                "content": chunk,
+                "chunk_index": i,
+                "total_chunks": len(answer_chunks)
+            })
+
+        # 完成事件
+        events.append({"type": "done", "timestamp": ResponseBuilder.format_timestamp()})
+
+        return events
+
+    @staticmethod
+    def _split_text(text: str, chunk_size: int) -> List[str]:
+        """
+        辅助方法：按大小分割文本
+
+        Args:
+            text: 要分割的文本
+            chunk_size: 块大小
+
+        Returns:
+            文本块列表
+        """
+        if not text:
+            return []
+
+        # 按句子分割更自然
+        sentences = re.split(r'([。！？.!?\n])', text)
+        chunks = []
+        current_chunk = ""
+
+        for i in range(0, len(sentences), 2):
+            sentence = sentences[i]
+            punctuation = sentences[i + 1] if i + 1 < len(sentences) else ""
+
+            if len(current_chunk) + len(sentence) + len(punctuation) > chunk_size:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = sentence + punctuation
+            else:
+                current_chunk += sentence + punctuation
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        return chunks if chunks else [text]
+
+    @staticmethod
     def build_success_response(data: Any, message: str = None,
                                metadata: Dict[str, Any] = None) -> Dict[str, Any]:
         """

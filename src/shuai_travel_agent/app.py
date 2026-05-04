@@ -21,6 +21,7 @@ from typing import Optional, List, Dict, Any
 import uvicorn
 import json
 import asyncio
+import re
 from datetime import datetime
 
 from .agent import ReActTravelAgent
@@ -181,14 +182,38 @@ async def chat_stream(request: Request):
             tools_used = reasoning.get('tools_used', [])
             total_steps = reasoning.get('total_steps', 0)
 
+            # 发送思考过程元数据（包含时间戳）
+            yield f"data: {json.dumps({
+                'type': 'reasoning_metadata',
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'has_reasoning': bool(reasoning_text),
+                'tools_used': tools_used,
+                'total_steps': total_steps
+            }, ensure_ascii=False)}\n\n"
+
             # 发送思考过程内容（逐行传输）
             if reasoning_text:
                 logger.info(f"开始发送思考内容，共 {len(reasoning_text)} 字符")
-                lines = reasoning_text.split('\n')
+                # 去除thinking标签，发送纯内容
+                thinking_content = reasoning_text
+                # 提取时间戳
+                timestamp_match = re.search(r'\[Timestamp: ([^\]]+)\]', thinking_content)
+                if timestamp_match:
+                    timestamp = timestamp_match.group(1)
+                    yield f"data: {json.dumps({
+                        'type': 'reasoning_timestamp',
+                        'timestamp': timestamp
+                    }, ensure_ascii=False)}\n\n"
+
+                # 发送思考内容各部分
+                lines = thinking_content.split('\n')
                 for line in lines:
-                    if line.strip():
-                        yield f"data: {json.dumps({'type': 'reasoning_chunk', 'content': line + '\n'}, ensure_ascii=False)}\n\n"
-                        await asyncio.sleep(0.05)  # 控制思考内容的输出速度
+                    if line.strip() and not line.strip().startswith('[Timestamp:'):
+                        yield f"data: {json.dumps({
+                            'type': 'reasoning_chunk',
+                            'content': line
+                        }, ensure_ascii=False)}\n\n"
+                        await asyncio.sleep(0.01)  # 加快思考内容的输出速度
                 logger.info("思考内容发送完成")
 
             # 发送思考过程结束信号
