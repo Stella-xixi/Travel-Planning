@@ -1,0 +1,26 @@
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build Python backend
+COPY ../src /app/src
+COPY ../requirements.txt /app/
+COPY ../run_api.py /app/
+WORKDIR /app
+RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /app/frontend
+
+# Expose ports
+EXPOSE 3000 8000
+
+# Start both services
+CMD ["sh", "-c", "npm run dev & python /app/run_api.py"]

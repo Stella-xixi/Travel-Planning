@@ -1,6 +1,8 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Message, AppConfig, ModelInfo, SessionInfo } from '../types';
-import { apiService } from '../services/api';
+import { Message, AppConfig, ModelInfo, SessionInfo } from '@/types';
+import { apiService } from '@/services/api';
 
 interface AppState {
   // 配置
@@ -16,9 +18,9 @@ interface AppState {
   // 会话
   currentSessionId: string | null;
   setCurrentSessionId: (id: string | null) => void;
-  switchSession: (id: string | null) => void;  // 切换会话，保留消息
-  refreshSessions: () => Promise<void>;  // 刷新会话列表
-  sessions: SessionInfo[];  // 会话列表
+  switchSession: (id: string | null) => Promise<void>;
+  refreshSessions: () => Promise<void>;
+  sessions: SessionInfo[];
 
   // 消息
   messages: Message[];
@@ -37,7 +39,7 @@ const AppContext = createContext<AppState | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [config, setConfig] = useState<AppConfig>({
-    apiBase: 'http://localhost:8000'
+    apiBase: process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
   });
 
   // 模型相关状态
@@ -47,7 +49,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [currentSessionId, setCurrentSessionIdState] = useState<string | null>(null);
   const [messages, setMessagesState] = useState<Message[]>([]);
-  // 会话消息缓存：保存每个会话的消息列表
   const [sessionMessages, setSessionMessages] = useState<Record<string, Message[]>>({});
 
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,8 +59,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const loadSessions = async () => {
     try {
       const data = await apiService.getSessions();
-      // 过滤掉没有消息的会话（首次发送前不显示）
-      // 但保留最近创建的会话（可能有用户正在创建中）
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const activeSessions = data.sessions.filter(s =>
         s.message_count > 0 ||
@@ -79,12 +78,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const data = await apiService.getAvailableModels();
         if (data.success && data.models.length > 0) {
           setAvailableModels(data.models);
-          // 设置默认模型
           setCurrentModelIdState(data.models[0].model_id);
         }
       } catch (error) {
         console.error('加载模型列表失败:', error);
-        // 设置默认模型列表作为降级方案
         setAvailableModels([{
           model_id: 'gpt-4o-mini',
           name: 'OpenAI GPT-4o Mini',
@@ -105,11 +102,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadSessions();
   }, []);
 
-  // 设置当前模型
   const handleSetCurrentModelId = async (modelId: string) => {
     setCurrentModelIdState(modelId);
-
-    // 如果有当前会话，同步设置会话模型
     if (currentSessionId) {
       try {
         await apiService.setSessionModel(currentSessionId, modelId);
@@ -118,11 +112,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
   };
-  
+
   const addMessage = (message: Message) => {
     setMessagesState(prev => {
       const newMessages = [...prev, message];
-      // 同时更新缓存
       if (currentSessionId) {
         setSessionMessages(cache => ({
           ...cache,
@@ -132,10 +125,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return newMessages;
     });
   };
-  
+
   const clearMessages = () => {
     setMessagesState([]);
-    // 清空当前会话的缓存
     if (currentSessionId) {
       setSessionMessages(cache => ({
         ...cache,
@@ -143,10 +135,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }));
     }
   };
-  
+
   const setMessages = (newMessages: Message[]) => {
     setMessagesState(newMessages);
-    // 更新缓存
     if (currentSessionId) {
       setSessionMessages(cache => ({
         ...cache,
@@ -155,23 +146,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  // 设置当前会话（不切换消息）
   const setCurrentSessionId = (id: string | null) => {
     setCurrentSessionIdState(id);
   };
 
-  // 刷新会话列表（自动调用，无需手动操作）
-  // 修改逻辑：与loadSessions保持一致，保留最近1小时创建的会话
   const refreshSessions = async (includeEmpty: boolean = false) => {
     try {
       const data = await apiService.getSessions();
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
       if (includeEmpty) {
-        // 如果明确要求显示空会话，显示所有会话
         setSessions(data.sessions);
       } else {
-        // 默认逻辑：过滤掉没有消息的会话，但保留最近1小时创建的会话
         const activeSessions = data.sessions.filter(s =>
           s.message_count > 0 ||
           new Date(s.last_active) > oneHourAgo
@@ -179,13 +165,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSessions(activeSessions);
       }
     } catch (error) {
-      // 静默失败，不影响用户操作
+      // 静默失败
     }
   };
 
-  // 切换会话（保留消息）
   const switchSession = async (id: string | null) => {
-    // 保存当前会话的消息
     if (currentSessionId && messages.length > 0) {
       setSessionMessages(cache => ({
         ...cache,
@@ -193,17 +177,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }));
     }
 
-    // 切换到新会话
     setCurrentSessionIdState(id);
 
-    // 加载新会话的消息（如果有缓存）
     if (id && sessionMessages[id]) {
       setMessagesState(sessionMessages[id]);
     } else {
       setMessagesState([]);
     }
 
-    // 切换会话时，加载该会话的模型
     if (id) {
       try {
         const data = await apiService.getSessionModel(id);
@@ -215,7 +196,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
   };
-  
+
   const value: AppState = {
     config,
     setConfig,
@@ -237,7 +218,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     stopStreaming,
     setStopStreaming,
   };
-  
+
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 

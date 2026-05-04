@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Card, Tag } from 'antd';
-import { Message } from '../types';
+'use client';
+
+import React from 'react';
+import { Card } from 'antd';
+import { Message } from '@/types';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import { BulbOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
@@ -8,26 +10,19 @@ import { BulbOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 interface Props {
   messages: Message[];
   streamingMessage?: string;
-  loadingDots?: string;
   isThinking?: boolean;
-  thinkingContent?: string;
-  // 支持展开/折叠的状态管理
   reasoningExpanded?: Record<string, boolean>;
   onToggleReasoning?: (messageId: string) => void;
 }
 
-// 清理文本中的多余空行和格式问题
 const cleanContent = (content: string): string => {
   if (!content) return '';
   return content
-    // 移除连续的空行
     .replace(/\n{2,}/g, '\n')
-    // 移除行尾空格
     .replace(/[ \t]+$/gm, '')
     .trim();
 };
 
-// 自定义Markdown组件渲染
 const markdownComponents: Components = {
   p: ({ children }) => <p style={{ margin: 0, padding: 0 }}>{children}</p>,
   li: ({ children }) => <li style={{ margin: 0, padding: 0, lineHeight: 1.6 }}>{children}</li>,
@@ -38,7 +33,6 @@ const markdownComponents: Components = {
   ul: ({ children }) => <ul style={{ margin: '2px 0', paddingLeft: '20px' }}>{children}</ul>,
 };
 
-// 可折叠的思考过程组件
 interface ReasoningBlockProps {
   reasoning: string;
   messageId: string;
@@ -66,7 +60,6 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
         overflow: 'hidden'
       }}
     >
-      {/* 头部 - 可点击展开/折叠 */}
       <div
         onClick={() => onToggle(messageId)}
         style={{
@@ -96,7 +89,6 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
         )}
       </div>
 
-      {/* 展开后的内容 */}
       {isExpanded && (
         <div
           style={{
@@ -119,7 +111,6 @@ const ReasoningBlock: React.FC<ReasoningBlockProps> = ({
   );
 };
 
-// 单条消息组件
 const MessageItem: React.FC<{
   msg: Message;
   reasoningExpanded: Record<string, boolean>;
@@ -127,7 +118,7 @@ const MessageItem: React.FC<{
 }> = ({ msg, reasoningExpanded, onToggleReasoning }) => {
   const isUser = msg.role === 'user';
   const messageId = `msg_${msg.timestamp}_${msg.content.slice(0, 10)}`;
-  const isExpanded = reasoningExpanded[messageId] ?? false; // 默认折叠
+  const isExpanded = reasoningExpanded[messageId] ?? false;
 
   return (
     <div
@@ -149,7 +140,6 @@ const MessageItem: React.FC<{
         }}
         bodyStyle={{ padding: '16px' }}
       >
-        {/* 用户头像 */}
         <div style={{
           fontSize: '13px',
           marginBottom: '8px',
@@ -159,7 +149,6 @@ const MessageItem: React.FC<{
           {isUser ? '你' : '小帅助手'}
         </div>
 
-        {/* 思考过程（仅助手消息，如果有reasoning） */}
         {!isUser && msg.reasoning && (
           <ReasoningBlock
             reasoning={msg.reasoning}
@@ -169,14 +158,12 @@ const MessageItem: React.FC<{
           />
         )}
 
-        {/* 消息内容 */}
         <div style={{ lineHeight: 1.7 }}>
           <ReactMarkdown components={markdownComponents}>
             {cleanContent(msg.content)}
           </ReactMarkdown>
         </div>
 
-        {/* 时间戳 */}
         <div style={{
           fontSize: '11px',
           marginTop: '8px',
@@ -193,8 +180,6 @@ const MessageItem: React.FC<{
 const MessageList: React.FC<Props> = ({
   messages,
   streamingMessage,
-  loadingDots,
-  isThinking,
   reasoningExpanded = {},
   onToggleReasoning
 }) => {
@@ -209,54 +194,6 @@ const MessageList: React.FC<Props> = ({
         />
       ))}
 
-      {/* 流式思考过程 - 默认折叠，点击才显示内容 */}
-      {isThinking && thinkingContent && (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '8px'
-          }}
-        >
-          <Card
-            style={{
-              width: '100%',
-              background: '#fafafa',
-              borderRadius: '12px',
-              border: '1px dashed #d9d9d9',
-            }}
-            bodyStyle={{ padding: '12px 16px' }}
-          >
-            {/* 头部 - 始终显示加载状态 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              color: '#999',
-              cursor: 'pointer'
-            }}>
-              <span style={{
-                display: 'inline-block',
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                border: '2px solid #722ed1',
-                borderTopColor: 'transparent',
-                animation: 'spin 1s linear infinite'
-              }} />
-              <span style={{ fontSize: '13px' }}>深度思考中{loadingDots}</span>
-            </div>
-          </Card>
-          <style>{`
-            @keyframes spin {
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      )}
-
-      {/* 流式回答内容 */}
       {streamingMessage && (
         <div
           style={{
@@ -282,11 +219,6 @@ const MessageList: React.FC<Props> = ({
                 {cleanContent(streamingMessage)}
               </ReactMarkdown>
             </div>
-            {loadingDots && (
-              <span style={{ color: '#999', fontSize: '12px', marginLeft: '4px' }}>
-                {loadingDots}
-              </span>
-            )}
           </Card>
         </div>
       )}

@@ -1,340 +1,328 @@
-# React前端部署指南
+# 小帅旅游助手 - Next.js 前端部署指南
 
-## 📋 目录
+> 本文档适用于 Next.js 前端版本的部署。
+
+## 目录
+
 - [快速开始](#快速开始)
-- [开发环境](#开发环境)
-- [生产构建](#生产构建)
-- [部署方案](#部署方案)
+- [本地开发](#本地开发)
+- [生产环境部署](#生产环境部署)
+- [Vercel 部署](#vercel-部署)
+- [Netlify 部署](#netlify-部署)
+- [环境变量配置](#环境变量配置)
 - [常见问题](#常见问题)
 
 ---
 
-## 🚀 快速开始
+## 快速开始
 
-### 快速开始
+### 前置条件
 
-#### 前置要求
-- Node.js >= 16.0.0
-- npm >= 8.0.0
-- 后端 API 服务运行在 `http://localhost:8000`
+- Node.js 18.x 或更高版本
+- npm 9.x 或更高版本
+- 后端服务运行中（默认 `http://localhost:8000`）
 
-#### 启动前端
+### 安装依赖
+
 ```bash
-# 1. 安装依赖
+cd frontend
 npm install
+```
 
-# 2. 启动开发服务器
+### 本地运行
+
+```bash
 npm run dev
 ```
 
-访问：http://localhost:3000
+访问 http://localhost:3000
 
 ---
 
-## 💻 开发环境
+## 本地开发
+
+### 开发模式
+
+```bash
+npm run dev
+```
+
+- 支持热重载
+- 自动打开浏览器
 
 ### 项目结构
+
 ```
 frontend/
 ├── src/
-│   ├── components/          # React组件
-│   │   ├── ChatArea.tsx     # 聊天交互区域
-│   │   ├── MessageList.tsx  # 消息列表
-│   │   └── Sidebar.tsx      # 侧边栏（会话管理）
-│   ├── context/             # 状态管理
-│   │   └── AppContext.tsx   # 全局Context
-│   ├── services/            # API服务
-│   │   └── api.ts           # 后端API调用
-│   ├── types/               # TypeScript类型
-│   │   └── index.ts         # 类型定义
-│   ├── App.tsx              # 主应用
-│   ├── App.css              # 应用样式
-│   ├── main.tsx             # 入口文件
-│   └── index.css            # 全局样式
-├── index.html               # HTML模板
-├── package.json             # 依赖配置
-├── vite.config.ts           # Vite配置
-├── tsconfig.json            # TypeScript配置
-├── .env.development         # 开发环境变量
-└── .env.production          # 生产环境变量
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # 根布局
+│   │   ├── page.tsx            # 首页
+│   │   └── globals.css         # 全局样式
+│   ├── components/             # React组件
+│   │   ├── ChatArea.tsx        # 聊天交互区域
+│   │   ├── MessageList.tsx     # 消息列表
+│   │   └── Sidebar.tsx         # 侧边栏
+│   ├── context/                # 状态管理
+│   │   └── AppContext.tsx      # 全局Context
+│   ├── services/               # API服务
+│   │   └── api.ts              # 后端API调用
+│   └── types/                  # TypeScript类型
+│       └── index.ts            # 类型定义
+├── package.json
+├── next.config.js
+├── tsconfig.json
+└── DEPLOYMENT.md
 ```
 
-### 技术栈
-- **React 18** - 现代UI框架
-- **TypeScript** - 类型安全
-- **Vite** - 快速构建工具
-- **Ant Design** - UI组件库
-- **Context API** - 状态管理
-- **Fetch API + ReadableStream** - SSE流式处理
+### 构建预览
 
-### 开发命令
 ```bash
-npm run dev      # 启动开发服务器（http://localhost:3000）
-npm run build    # 生产构建
-npm run preview  # 预览生产构建（http://localhost:4173）
-npm run lint     # 代码检查
-```
-
-### API代理配置
-开发环境通过Vite代理访问后端API（`vite.config.ts`）：
-```typescript
-server: {
-  port: 3000,
-  proxy: {
-    '/api': {
-      target: 'http://localhost:8000',
-      changeOrigin: true,
-    }
-  }
-}
-```
-
----
-
-## 📦 生产构建
-
-### 执行构建
-```bash
-# 1. 安装依赖（如果还没有）
-npm install
-
-# 2. 执行构建
 npm run build
-
-# 3. 预览构建结果（可选）
-npm run preview
-```
-
-### 构建产物
-构建完成后，所有静态文件将生成在 `dist/` 目录：
-```
-dist/
-├── index.html          # 入口HTML
-├── assets/             # 静态资源
-│   ├── index-xxx.js    # 打包后的JS
-│   ├── index-xxx.css   # 打包后的CSS
-│   └── ...
-└── vite.svg            # 静态图标
+npm start
 ```
 
 ---
 
-## 🌐 部署方案
+## 生产环境部署
 
-### 方案1：Nginx部署（推荐）
+### 1. 构建应用
 
-#### 1. 配置Nginx
-创建配置文件 `/etc/nginx/sites-available/shuai-travel-agent`：
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;  # 修改为您的域名
-    
-    # 前端静态文件
-    location / {
-        root /var/www/shuai-travel-agent/frontend/dist;
-        try_files $uri $uri/ /index.html;
-        
-        # 缓存策略
-        add_header Cache-Control "public, max-age=31536000" always;
-    }
-    
-    # API代理
-    location /api {
-        proxy_pass http://localhost:8000;
-        proxy_http_version 1.1;
-        
-        # SSE流式响应支持
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        
-        # 禁用缓冲（SSE必需）
-        proxy_buffering off;
-        proxy_cache off;
-        
-        # 超时设置
-        proxy_read_timeout 300s;
-        proxy_connect_timeout 75s;
-    }
-}
-```
-
-#### 2. 部署步骤
 ```bash
-# 1. 上传构建产物到服务器
-scp -r dist/ user@server:/var/www/shuai-travel-agent/frontend/
-
-# 2. 启用Nginx配置
-sudo ln -s /etc/nginx/sites-available/shuai-travel-agent /etc/nginx/sites-enabled/
-
-# 3. 测试并重载Nginx
-sudo nginx -t
-sudo systemctl reload nginx
-
-# 4. 启动后端API服务
-cd /var/www/shuai-travel-agent
-python run_api.py
-```
-
----
-
-### 方案2：FastAPI静态托管
-
-#### 修改后端app.py
-```python
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-import os
-
-app = FastAPI()
-
-# ... 其他API路由 ...
-
-# 托管前端静态文件
-frontend_dist = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
-if os.path.exists(frontend_dist):
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
-    
-    @app.get("/")
-    async def serve_frontend():
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
-    
-    @app.get("/{full_path:path}")
-    async def catch_all(full_path: str):
-        # API路由不受影响
-        if full_path.startswith("api/"):
-            return {"error": "Not found"}
-        
-        # 其他路由返回index.html（SPA路由）
-        file_path = os.path.join(frontend_dist, full_path)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
-```
-
-#### 部署步骤
-```bash
-# 1. 构建前端
 npm run build
+```
 
-# 2. 启动FastAPI服务（会自动托管前端）
-python run_api.py
+### 2. 启动生产服务器
 
-# 访问：http://localhost:8000
+```bash
+npm start
+```
+
+或使用 PM2 进程管理：
+
+```bash
+npm install -g pm2
+pm2 start npm --name "shuai-travel" -- start
+pm2 startup
+pm2 save
 ```
 
 ---
 
-### 方案3：Vercel部署（前端）
+## Vercel 部署
 
-#### 1. 准备配置文件
-在 `frontend/` 目录创建 `vercel.json`：
-```json
-{
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://your-backend-api.com/api/$1" },
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}
+Vercel 是 Next.js 的官方推荐部署平台。
+
+### 方式一：通过 Git 部署
+
+1. 推送代码到 GitHub/GitLab/Bitbucket
+2. 访问 [Vercel](https://vercel.com)
+3. 导入项目
+4. 配置环境变量：
+
+```
+NEXT_PUBLIC_API_BASE=http://your-backend-api.com
 ```
 
-#### 2. 部署
-```bash
-# 1. 安装Vercel CLI
-npm install -g vercel
+5. 点击 Deploy
 
-# 2. 登录
+### 方式二：通过 Vercel CLI
+
+```bash
+# 安装 Vercel CLI
+npm i -g vercel
+
+# 登录
 vercel login
 
-# 3. 部署
+# 部署
 cd frontend
 vercel --prod
 ```
 
----
+### Vercel 配置文件 (`vercel.json`)
 
-## ❓ 常见问题
-
-### Q1: TypeScript编译错误
-**问题**：运行时出现 `Cannot find module 'react'` 等错误
-
-**解决**：
-```bash
-# 删除依赖并重新安装
-rm -rf node_modules package-lock.json
-npm install
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "${NEXT_PUBLIC_API_BASE}/api/:path*"
+    }
+  ]
+}
 ```
 
 ---
 
-### Q2: API请求失败（CORS错误）
-**问题**：前端无法访问后端API
+## Netlify 部署
 
-**解决**：
-1. 确保后端已配置CORS（`app.py`已添加）
-2. 检查后端服务是否运行在 `http://localhost:8000`
-3. 开发环境使用Vite代理，生产环境需配置Nginx代理
+### 方式一：通过 Git 部署
+
+1. 推送代码到 GitHub
+2. 访问 [Netlify](https://netlify.com)
+3. New site from Git
+4. 选择仓库
+5. 配置构建设置：
+
+```
+Build command: npm run build
+Publish directory: .next
+```
+
+6. 添加环境变量
+7. Deploy site
+
+### 方式二：通过 Netlify CLI
+
+```bash
+# 安装 Netlify CLI
+npm install -g netlify-cli
+
+# 登录
+netlify login
+
+# 部署
+cd frontend
+netlify deploy --prod
+```
+
+### Netlify 配置文件 (`netlify.toml`)
+
+```toml
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://your-backend-api.com/api/:splat"
+  status = 200
+```
 
 ---
 
-### Q3: 流式响应不工作
-**问题**：AI回复不是逐字显示
+## 环境变量配置
+
+### 必需变量
+
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `NEXT_PUBLIC_API_BASE` | 后端 API 地址 | `http://localhost:8000` |
+
+### 可选变量
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `NEXT_PUBLIC_APP_NAME` | 应用标题 | `小帅旅游助手` |
+| `NEXT_TELEMETRY_DISABLE` | 禁用遥测 | `1` |
+
+### 本地开发配置
+
+创建 `.env.local` 文件：
+
+```bash
+# 后端 API 地址
+NEXT_PUBLIC_API_BASE=http://localhost:8000
+```
+
+### Vercel 环境变量
+
+在 Vercel Dashboard → Settings → Environment Variables 中添加：
+
+```
+NEXT_PUBLIC_API_BASE = https://your-backend-api.com
+```
+
+---
+
+## 常见问题
+
+### Q1: 如何修改后端 API 地址？
+
+在 `.env.local` 中设置：
+
+```bash
+NEXT_PUBLIC_API_BASE=http://your-backend:8000
+```
+
+### Q2: 部署后静态资源加载失败？
+
+确保正确配置了 `output: 'standalone'` 在 `next.config.js`：
+
+```javascript
+module.exports = {
+  output: 'standalone',
+}
+```
+
+### Q3: 如何启用 HTTPS？
+
+- **Vercel/Netlify**: 自动启用
+- **其他平台**: 使用 Nginx 反向代理或平台提供的 SSL 证书
+
+### Q4: 如何实现 API 代理？
+
+在 `next.config.js` 中配置 rewrites：
+
+```javascript
+async rewrites() {
+  return [
+    {
+      source: '/api/:path*',
+      destination: `${process.env.NEXT_PUBLIC_API_BASE}/:path*`,
+    },
+  ]
+},
+```
+
+### Q5: API 请求失败（CORS 错误）
 
 **解决**：
-1. 检查后端 `/api/chat/stream` 端点是否正常
+1. 确保后端已配置 CORS
+2. 检查后端服务是否运行
+3. 配置 API 代理或使用完整 URL
+
+### Q6: 流式响应不工作
+
+**解决**：
+1. 检查后端 `/api/chat/stream` 端点
 2. 检查网络代理是否禁用了流式传输
-3. Nginx配置需添加 `proxy_buffering off`
+3. Nginx 配置需添加 `proxy_buffering off`
 
 ---
 
-### Q4: 构建体积过大
-**问题**：`dist/` 目录体积超过预期
+## 性能优化建议
 
-**优化**：
-```bash
-# 1. 分析构建体积
-npm run build -- --mode production
-
-# 2. 查看依赖树
-npm list --depth=0
-
-# 3. 移除未使用的依赖
-npm prune
-```
+1. **启用缓存**：使用 `next/image` 优化图片
+2. **代码分割**：Next.js 自动处理
+3. **预取**：使用 `<Link prefetch={true}>`
+4. **压缩**：启用 Gzip/Brotli
+5. **CDN**：使用 Vercel Edge Network
 
 ---
 
-### Q5: 生产环境白屏
-**问题**：部署后页面空白
+## 相关链接
 
-**排查**：
-1. 检查浏览器控制台错误
-2. 确认静态资源路径正确
-3. 检查Nginx/FastAPI路由配置
-4. 确认 `index.html` 可访问
+- [Next.js 文档](https://nextjs.org/docs)
+- [Vercel 文档](https://vercel.com/docs)
+- [Netlify 文档](https://docs.netlify.com)
+- [React 文档](https://react.dev)
 
 ---
 
-## 📞 技术支持
+## 更新日志
 
-如有问题，请检查：
-1. **后端日志**：`python run_api.py` 输出
-2. **前端控制台**：浏览器开发者工具
-3. **网络请求**：浏览器Network标签
-4. **配置文件**：`config/config.json`
-
----
-
-## 📝 更新日志
-
-### v1.0.0 (2024-12-25)
-- ✅ 初始版本发布
-- ✅ React 18 + TypeScript架构
-- ✅ SSE流式响应支持
-- ✅ 停止控制功能
-- ✅ 会话管理
-- ✅ Ant Design UI
+### v2.0.0 (2024-12-27)
+- ✅ 迁移到 Next.js 14 App Router
+- ✅ 支持 SSR/SSG
+- ✅ 优化构建配置
+- ✅ 多平台部署文档

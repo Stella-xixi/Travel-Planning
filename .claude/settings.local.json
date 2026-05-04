@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(python:*)",
+      "Bash(cd /d:*)",
+      "Bash(npm run build)",
+      "Bash(curl:*)",
+      "Bash(where:*)",
+      "Bash(py:*)",
+      "Bash(python3 -c:*)",
+      "Bash(\"D:\\\\codes\\\\anaconda3\\\\envs\\\\agents\\\\python.exe\":*)",
+      "Bash(\"D:\\\\codes\\\\anaconda3\\\\envs\\\\agents\\\\python.exe\" -c:*)",
+      "Bash(D:\\\\codes\\\\anaconda3\\\\envs\\\\agents\\\\python.exe -c:*)",
+      "Bash(npm install @ant-design/cssinjs)",
+      "Bash(cat:*)"
+    ]
+  }
+}
