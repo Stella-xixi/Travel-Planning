@@ -1,0 +1,25 @@
+"""Shared constants."""
+
+# gRPC
+GRPC_PORT = 50051
+GRPC_HOST = "0.0.0.0"
+
+# Web
+WEB_PORT = 8000
+WEB_HOST = "0.0.0.0"
+
+# Session
+SESSION_MAX_AGE = 86400  # 24 hours
+SESSION_CLEANUP_INTERVAL = 3600  # 1 hour
+
+# LLM
+DEFAULT_MODEL = "gpt-4o-mini"
+MAX_TOKENS = 2000
+TEMPERATURE = 0.7
+
+# Agent
+MAX_REASONING_STEPS = 10
+MAX_REASONING_DEPTH = 5
+
+# Frontend
+NEXTJS_PORT = 3000

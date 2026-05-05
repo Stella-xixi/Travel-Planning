@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Space, List, Card, message as antMessage, Modal, Select, Spin } from 'antd';
+import { Button, Input, Space, Card, Modal, Select, Spin, App, Flex } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -15,6 +15,7 @@ import { SessionInfo } from '../types';
 const { Option } = Select;
 
 const Sidebar: React.FC = () => {
+  const { message } = App.useApp();
   const {
     config,
     setConfig,
@@ -44,9 +45,9 @@ const Sidebar: React.FC = () => {
       switchSession(data.session_id);
       // 刷新会话列表
       await refreshSessions();
-      antMessage.success('新会话已创建');
+      message.success('新会话已创建');
     } catch (error) {
-      antMessage.error('创建会话失败');
+      message.error('创建会话失败');
     } finally {
       setLoading(false);
     }
@@ -61,9 +62,9 @@ const Sidebar: React.FC = () => {
         switchSession(null);
       }
       await refreshSessions();
-      antMessage.success('会话已删除');
+      message.success('会话已删除');
     } catch (error) {
-      antMessage.error('删除失败');
+      message.error('删除失败');
     }
   };
 
@@ -93,9 +94,9 @@ const Sidebar: React.FC = () => {
       await refreshSessions();
       setEditingSessionId(null);
       setEditingName('');
-      antMessage.success('会话名称已更新');
+      message.success('会话名称已更新');
     } catch (error) {
-      antMessage.error('更新失败');
+      message.error('更新失败');
     }
   };
 
@@ -103,25 +104,25 @@ const Sidebar: React.FC = () => {
   const handleHealthCheck = async () => {
     try {
       const data = await apiService.checkHealth();
-      antMessage.success(`连接成功\n\nAgent: ${data.agent}\n版本: ${data.version}`);
+      message.success(`连接成功\n\nAgent: ${data.agent}\n版本: ${data.version}`);
     } catch (error) {
-      antMessage.error('无法连接到服务器');
+      message.error('无法连接到服务器');
     }
   };
 
   // 清空对话
   const handleClearChat = async () => {
     if (!currentSessionId) {
-      antMessage.warning('请先创建会话');
+      message.warning('请先创建会话');
       return;
     }
 
     try {
       await apiService.clearChat(currentSessionId);
       clearMessages();
-      antMessage.success('对话已清空');
+      message.success('对话已清空');
     } catch (error) {
-      antMessage.error('清空失败');
+      message.error('清空失败');
     }
   };
 
@@ -131,9 +132,9 @@ const Sidebar: React.FC = () => {
       setSwitchingModel(true);
       await setCurrentModelId(modelId);
       const model = availableModels.find(m => m.model_id === modelId);
-      antMessage.success(`已切换到 ${model?.name || modelId}`);
+      message.success(`已切换到 ${model?.name || modelId}`);
     } catch (error) {
-      antMessage.error('模型切换失败，请重试');
+      message.error('模型切换失败，请重试');
       console.error('模型切换错误:', error);
     } finally {
       setSwitchingModel(false);
@@ -171,7 +172,7 @@ const Sidebar: React.FC = () => {
 
       {/* API配置 */}
       <Card title="⚙️ 系统配置" size="small" style={{ marginBottom: '16px' }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Input
             value={apiBase}
             onChange={(e) => setApiBase(e.target.value)}
@@ -207,28 +208,18 @@ const Sidebar: React.FC = () => {
         title="📊 历史会话"
         size="small"
         style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
-        bodyStyle={{ flex: 1, overflow: 'auto', padding: '8px' }}
+        styles={{ body: { flex: 1, overflow: 'auto', padding: '8px' } }}
       >
-        <List
-          dataSource={sessions}
-          renderItem={(session) => (
-            <List.Item
-              style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}
-              actions={[
-                <Button
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => handleStartEdit(session)}
-                  title="重命名"
-                />,
-                <Button
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => handleDeleteSession(session.session_id)}
-                  title="删除"
-                />
-              ]}
+        <Flex vertical gap={0}>
+          {sessions.map((session) => (
+            <div
+              key={session.session_id}
+              style={{
+                padding: '8px 0',
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+              }}
             >
               <div
                 onClick={() => handleSwitchSession(session.session_id)}
@@ -239,12 +230,27 @@ const Sidebar: React.FC = () => {
                   {session.name || `会话 ${session.session_id.slice(0, 8)}`} ({session.message_count}条)
                 </div>
                 <div style={{ fontSize: '12px', color: '#999' }}>
-                  🕒 {new Date(session.last_active).toLocaleString('zh-CN')}
+                  {new Date(session.last_active).toLocaleString('zh-CN')}
                 </div>
               </div>
-            </List.Item>
-          )}
-        />
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <Button
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => handleStartEdit(session)}
+                  title="重命名"
+                />
+                <Button
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteSession(session.session_id)}
+                  title="删除"
+                />
+              </div>
+            </div>
+          ))}
+        </Flex>
       </Card>
 
       {/* 编辑会话名称对话框 */}

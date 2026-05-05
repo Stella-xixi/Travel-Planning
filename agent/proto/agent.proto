@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package agent;
+
+// Agent 服务定义
+service AgentService {
+    // 处理用户消息
+    rpc ProcessMessage (MessageRequest) returns (MessageResponse);
+
+    // 流式处理用户消息
+    rpc StreamMessage (MessageRequest) returns (stream StreamChunk);
+
+    // 健康检查
+    rpc HealthCheck (HealthRequest) returns (HealthResponse);
+}
+
+// 消息请求
+message MessageRequest {
+    string session_id = 1;
+    string user_input = 2;
+    string model_id = 3;
+    bool stream = 4;
+}
+
+// 消息响应
+message MessageResponse {
+    bool success = 1;
+    string answer = 2;
+    ReasoningInfo reasoning = 3;
+    string error = 4;
+    repeated HistoryStep history = 5;
+}
+
+// 推理信息
+message ReasoningInfo {
+    string text = 1;
+    int32 total_steps = 2;
+    repeated string tools_used = 3;
+}
+
+// 历史步骤
+message HistoryStep {
+    int32 step = 1;
+    ThoughtInfo thought = 2;
+    ActionInfo action = 3;
+    EvaluationInfo evaluation = 4;
+    string timestamp = 5;
+}
+
+// 思考信息
+message ThoughtInfo {
+    string id = 1;
+    string type = 2;
+    string content = 3;
+    float confidence = 4;
+    string decision = 5;
+}
+
+// 行动信息
+message ActionInfo {
+    string id = 1;
+    string tool_name = 2;
+    map<string, string> parameters = 3;
+    string status = 4;
+    int32 duration = 5;
+    string result = 6;
+    string error = 7;
+}
+
+// 评估信息
+message EvaluationInfo {
+    bool success = 1;
+    int32 duration = 2;
+    bool has_result = 3;
+}
+
+// 流式块
+message StreamChunk {
+    string chunk_type = 1;  // "thinking", "answer", "done", "error"
+    string content = 2;
+    bool is_last = 3;
+}
+
+// 健康检查请求
+message HealthRequest {}
+
+// 健康检查响应
+message HealthResponse {
+    bool healthy = 1;
+    string version = 2;
+    string status = 3;
+}

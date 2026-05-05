@@ -270,7 +270,7 @@ const MessageItem: React.FC<{
             border: isUser ? 'none' : '1px solid #e8e8e8',
             boxShadow: isUser ? '0 2px 8px rgba(102, 126, 234, 0.3)' : 'none',
           }}
-          bodyStyle={{ padding: '14px 16px' }}
+          styles={{ body: { padding: '14px 16px' } }}
         >
           {/* 思考过程（仅AI消息） */}
           {!isUser && msg.reasoning && (
@@ -357,7 +357,7 @@ const MessageList: React.FC<Props> = ({
               borderRadius: '12px',
               border: '1px solid #e8e8e8',
             }}
-            bodyStyle={{ padding: '14px 16px' }}
+            styles={{ body: { padding: '14px 16px' } }}
           >
             {/* 流式思考过程 */}
             {reasoning && (

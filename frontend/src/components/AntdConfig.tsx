@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntApp } from 'antd';
 
 const AntdConfig: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
@@ -13,7 +13,9 @@ const AntdConfig: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         },
       }}
     >
-      {children}
+      <AntApp>
+        {children}
+      </AntApp>
     </ConfigProvider>
   );
 };

@@ -236,6 +236,7 @@ const ChatArea: React.FC = () => {
       <div style={{ flex: 1, overflow: 'auto', marginBottom: '16px' }}>
         <MessageList
           messages={messages}
+          streamingMessage={streamingMessage}
           streamingReasoning={streamingReasoning}
           reasoningExpanded={reasoningExpanded}
           onToggleReasoning={toggleReasoning}
@@ -286,7 +287,7 @@ const ChatArea: React.FC = () => {
                   borderRadius: '12px',
                   border: '1px solid #e8e8e8',
                 }}
-                bodyStyle={{ padding: '14px 16px' }}
+                styles={{ body: { padding: '14px 16px' } }}
               >
                 <div style={{
                   display: 'flex',

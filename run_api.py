@@ -1,38 +1,24 @@
 """
-FastAPI启动脚本
+FastAPI启动脚本 - ShuaiTravelAgent Web API Server
 """
 import sys
 import os
+import subprocess
 
-# Add src directory to path
+# Set project root
 project_root = os.path.dirname(os.path.abspath(__file__))
-os.chdir(project_root)
-src_path = os.path.join(project_root, 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
-
-try:
-    from shuai_travel_planning_agent_runtime.app import app, start_server
-    from shuai_travel_planning_agent_runtime.config_manager import ConfigManager
-except ImportError as e:
-    print(f"\n❌ Import Error: {e}")
-    print(f"\nMake sure you're running from project root: {project_root}")
-    print(f"Python path: {sys.path}\n")
-    sys.exit(1)
+web_path = os.path.join(project_root, 'web')
 
 if __name__ == "__main__":
-    try:
-        config_path = os.path.join('config', 'config.json')
-        config_manager = ConfigManager(config_path)
-        web_config = config_manager.get_config('web', {})
-        start_server(
-            host=web_config.get('host', '0.0.0.0'),
-            port=web_config.get('port', 8000),
-            reload=web_config.get('debug', True)
-        )
-    except FileNotFoundError as e:
-        print(f"\n❌ Configuration Error:\n{str(e)}\n")
-        sys.exit(1)
-    except Exception as e:
-        print(f"\n❌ Startup Error: {str(e)}\n")
-        sys.exit(1)
+    # Run directly from web directory
+    cmd = [
+        sys.executable, "-m", "uvicorn", "src.main:app",
+        "--host", "0.0.0.0",
+        "--port", "8000"
+    ]
+
+    print("[*] Starting Web API Server...")
+    print(f"    Working directory: {web_path}")
+
+    env = os.environ.copy()
+    subprocess.run(cmd, cwd=web_path, env=env)

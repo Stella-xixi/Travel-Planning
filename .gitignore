@@ -24,36 +24,38 @@ wheels/
 venv/
 env/
 ENV/
-.venv
+.venv/
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
+*swo
 *~
+.DS_Store
+Thumbs.db
 
-# Configuration files (exclude actual configs, keep examples)
-config/config.json
-config/llm_config.json
+# Configuration files
+# - Actual config files (llm_config.yaml) are ignored
+# - Template files (*.yaml.example) are tracked by git
+config/*.yaml
+config/*.yml
+!config/*.yaml.example
 config.json
 llm_config.json
+.env
+.env.local
+.env.*.local
 
 # Logs
 *.log
 logs/
-
-# OS
-.DS_Store
-Thumbs.db
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
-
-# MyPy
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -64,12 +66,12 @@ dmypy.json
 # Project specific
 memory_*.json
 session_*.json
+*.pb
+*.pb.gz
 
 # Frontend / Node.js
 frontend/node_modules/
 frontend/dist/
-frontend/.env.local
-frontend/.env.*.local
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
@@ -79,6 +81,9 @@ frontend/pnpm-debug.log*
 frontend/.next/
 frontend/out/
 frontend/build/
-frontend/.eslintrc.json
 *.tsbuildinfo
 next-env.d.ts
+
+# gRPC generated files
+agent/src/**/*.pb.py
+agent/src/**/*.pb2.py
