@@ -18,7 +18,6 @@ ReAct模式是一种结合推理和行动的智能体架构，模拟人类解决
 - LongTermMemory: 长期记忆（历史经验学习）
 - ReActAgent: 智能体主类，整合各模块实现完整推理循环
 
-作者：AI Assistant
 版本：2.0.0
 """
 
