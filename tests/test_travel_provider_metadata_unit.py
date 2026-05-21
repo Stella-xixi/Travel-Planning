@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from agent.src.tools.travel_api import TravelAPIClient
-from agent.src.tools.travel_tools import get_weather, query_attractions, query_hotels, search_cities
+from travel_planning_agent_runtime.tools.travel_api import TravelAPIClient
+from travel_planning_agent_runtime.tools.travel_tools import get_weather, query_attractions, query_hotels, search_cities
 
 
 @pytest.mark.asyncio

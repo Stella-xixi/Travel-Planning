@@ -5,8 +5,8 @@ The module validates behavior, regressions, and integration contracts.
 
 from __future__ import annotations
 
-from agent.src.graph.builder import get_tool_health_diagnostics
-from agent.src.graph.runtime_config import get_runtime_config
+from travel_planning_agent_runtime.graph.builder import get_tool_health_diagnostics
+from travel_planning_agent_runtime.graph.runtime_config import get_runtime_config
 
 
 def test_runtime_config_parses_env_values(monkeypatch):

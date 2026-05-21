@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agent.src.graph.builder import build_travel_planning_agent_runtime
-from agent.src.graph.state import TRAVEL_AGENT_SYSTEM_PROMPT, create_initial_state
+from travel_planning_agent_runtime.graph.builder import build_travel_planning_agent_runtime
+from travel_planning_agent_runtime.graph.state import TRAVEL_AGENT_SYSTEM_PROMPT, create_initial_state
 
 
 @dataclass

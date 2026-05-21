@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from langchain_core.messages import HumanMessage
 
-from agent.src.graph.memory_integration import AgentMemoryManager
+from travel_planning_agent_runtime.graph.memory_integration import AgentMemoryManager
 
 
 @pytest.mark.asyncio
