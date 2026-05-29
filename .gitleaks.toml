@@ -1,4 +1,4 @@
-title = "ShuaiTravelAgent gitleaks config"
+title = "Travel-Planning gitleaks config"
 
 [extend]
 useDefault = true
