@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 if str(WEB_DIR) not in sys.path:
     sys.path.insert(0, str(WEB_DIR))
 
-from shuai_web.main import create_app
+from travel_planning_api.main import create_app
 
 
 DEFAULT_OUTPUT = ROOT / "docs" / "reference" / "openapi.snapshot.json"

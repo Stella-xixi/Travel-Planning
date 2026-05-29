@@ -21,7 +21,7 @@ if str(WEB_DIR) not in sys.path:
     sys.path.insert(0, str(WEB_DIR))
 
 from scripts.runtime_data_utils import DEFAULT_BACKUP_DIR, parse_utc_iso
-from shuai_web.storage.session_storage import FileSessionStorage
+from travel_planning_api.storage.session_storage import FileSessionStorage
 
 
 def prune_backup_archives(
