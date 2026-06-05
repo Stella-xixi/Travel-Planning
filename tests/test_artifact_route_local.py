@@ -2,17 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 import uuid
-from pathlib import Path
 
 import httpx
 import pytest
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WEB_DIR = PROJECT_ROOT / "web"
-if str(WEB_DIR) not in sys.path:
-    sys.path.insert(0, str(WEB_DIR))
 
 from travel_planning_api.dependencies.container import get_container  # noqa: E402
 from travel_planning_api.main import create_app  # noqa: E402

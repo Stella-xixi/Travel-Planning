@@ -2,15 +2,7 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import pytest
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-WEB_DIR = PROJECT_ROOT / "web"
-if str(WEB_DIR) not in sys.path:
-    sys.path.insert(0, str(WEB_DIR))
 
 import travel_planning_api.observability as observability  # noqa: E402
 from travel_planning_api.services.chat.stream_diagnostics import ChatStreamDiagnostics  # noqa: E402
