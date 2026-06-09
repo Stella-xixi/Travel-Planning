@@ -3,6 +3,8 @@
 from .builder import (
     TravelAgentGraph,
     build_travel_planning_agent_runtime,
+)
+from .legacy_runtime import (
     generate_plan_preview_with_memory,
     run_travel_planning_agent_runtime,
     run_travel_planning_agent_runtime_streaming,
