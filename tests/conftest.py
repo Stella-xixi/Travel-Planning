@@ -10,7 +10,7 @@ import httpx
 import pytest
 import pytest_asyncio
 
-from web.travel_planning_api.bootstrap import ensure_project_paths
+from backend.travel_planning_api.bootstrap import ensure_project_paths
 
 ensure_project_paths()
 

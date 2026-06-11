@@ -62,10 +62,10 @@ DEFAULT_TARGETS: tuple[BudgetTarget, ...] = (
     ),
     BudgetTarget("agent/travel_planning_agent_runtime/pipelines/planning.py", "planning pipeline hotspot"),
     BudgetTarget(
-        "web/travel_planning_api/services/chat/stream_mixin.py",
+        "backend/travel_planning_api/services/chat/stream_mixin.py",
         "chat streaming orchestration hotspot",
     ),
-    BudgetTarget("web/travel_planning_api/routes/api_docs.py", "API docs presentation route"),
+    BudgetTarget("backend/travel_planning_api/routes/api_docs.py", "API docs presentation route"),
     BudgetTarget("frontend/src/utils/travelPlan.ts", "trip-plan shared transformation helper"),
     BudgetTarget(
         "frontend/src/components/chat-area/useChatRuntime.ts",
