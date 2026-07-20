@@ -38,7 +38,10 @@ LABEL org.opencontainers.image.title="Travel-Planning V1 API and workers" \
       org.opencontainers.image.revision=${APP_BUILD_SHA} \
       org.opencontainers.image.created=${APP_BUILD_CREATED_AT}
 
-RUN groupadd --gid 10001 travel-planning && \
+RUN apt-get update && \
+    apt-get upgrade --yes --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 10001 travel-planning && \
     useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent \
       --shell /usr/sbin/nologin travel-planning && \
     mkdir -p /app/data /app/logs && \
