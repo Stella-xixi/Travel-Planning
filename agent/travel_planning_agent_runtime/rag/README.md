@@ -64,3 +64,17 @@ freshness、license、trust tier 和 visibility provenance。生命周期命令�
 
 管理员实际摄取、检索验证、版本更新和当前删除限制见
 [RAG 知识摄取 Runbook](../../../docs/operations/rag-ingestion.md)。
+
+## 版本化知识包
+
+`bundle.py` 为仓库内审核知识提供严格 manifest、路径限制、正文 SHA-256、
+许可与复核元数据校验。首批内置包位于
+[`curated/travel-planning-travel-basics-zh/`](curated/travel-planning-travel-basics-zh/README.md)，
+包含 6 篇稳定旅行决策知识、12 篇首批省级地区指南和 36 个固定检索问题。
+地区指南携带 `upstream_sources` 官方来源清单，但只索引 Travel-Planning 复核后的原创摘要，
+不会抓取或复制上游页面。营业、票价、班次、天气和库存等实时事实必须进入 Provider Gateway。
+
+通过 `python -m scripts.v1_knowledge_base` 执行 validate、plan、apply 和 verify；
+应用启动不会隐式发布知识。完整的新增来源、复核周期、蓝绿 revision 切换、回滚和
+紧急下线流程见
+[知识库建设与维护手册](../../../docs/operations/knowledge-base-maintenance.md)。
