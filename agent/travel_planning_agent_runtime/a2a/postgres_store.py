@@ -344,6 +344,15 @@ class PostgresAgentTaskStore(AgentTaskPersistence):
                         agent_task_events_table.c.tenant_id == tenant_id,
                         agent_task_events_table.c.agent_interface_id == agent_interface_id,
                         agent_task_events_table.c.task_id == task_id,
+                        # READ COMMITTED gives each statement its own snapshot. A
+                        # concurrent replacement may commit after the parent Task
+                        # row above was read but before this event query runs. In
+                        # that case the newer event rows are visible while the
+                        # parent still carries the older event_count/version. Read
+                        # exactly the history described by that parent snapshot;
+                        # a later poll will observe the replacement atomically.
+                        agent_task_events_table.c.event_seq <= event_count,
+                        agent_task_events_table.c.task_version <= int(row["version"]),
                     )
                     .order_by(agent_task_events_table.c.event_seq)
                     .limit(MAX_PERSISTED_TASK_EVENTS + 1)
