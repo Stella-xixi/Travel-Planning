@@ -13,7 +13,7 @@
     "@travel-planning/contracts-generated": "file:../../packages/typescript/contracts_generated",
     "next": "16.2.7",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@types/node": "22.19.19",
