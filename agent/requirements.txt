@@ -1,5 +1,5 @@
 -e ../packages/python/travel_planning_contracts
-a2a-sdk[fastapi]>=1.1.0,<2.0.0
+a2a-sdk[fastapi]>=1.1.2,<2.0.0
 httpx>=0.28.0,<1
 psycopg[binary]>=3.2.3,<4
 pydantic>=2.11.0,<3
